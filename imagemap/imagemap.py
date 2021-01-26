@@ -4,15 +4,19 @@ from PIL.Image import DecompressionBombError
 from . import utils
 
 
-def create_image(points, filepaths, width, height, 
-                 extent=None, 
-                 image_size=256, 
-                 gridded=False,
-                 square_images=False,
-                 margin=0,
-                 background_color=(255, 255, 255, 0),
-                 verbose=False):
-    
+def create_image(
+    points,
+    filepaths,
+    width,
+    height,
+    extent=None,
+    image_size=256,
+    gridded=False,
+    square_images=False,
+    margin=0,
+    background_color=(255, 255, 255, 0),
+    verbose=False
+):
     if extent is None:
         extent = np.concatenate(
             [points.min(axis=0), points.max(axis=0)])
