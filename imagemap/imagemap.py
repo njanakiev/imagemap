@@ -1,7 +1,10 @@
+import logging
 import numpy as np
 from PIL import Image, ImageOps
 from PIL.Image import DecompressionBombError
 from . import utils
+
+logger = logging.getLogger(__name__)
 
 
 def create_image(
@@ -29,7 +32,7 @@ def create_image(
 
     for i, ((x, y), filepath) in enumerate(zip(points, filepaths)):
         if verbose and i % 500 == 0:
-            print(f"Num images: {i}")
+            logger.info(f"Num images: {i}")
         
         # Normalize between 0 and 1
         x = (x - min_x) / (max_x - min_x)
@@ -59,6 +62,6 @@ def create_image(
             else:
                 full_image.paste(img, (x, y))
         except DecompressionBombError:
-            print("DecompressionBombError", filepath)
+            logging.warn("DecompressionBombError", filepath)
 
     return full_image
