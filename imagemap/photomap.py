@@ -80,7 +80,7 @@ def merge_images(filepaths, dst_filepath):
 
 def crop(src_filepath, dst_filepath, geom):
     with rasterio.open(src_filepath, mode='r') as src:
-        bbox = photomap.utils.scale_bounds(geom.bounds, src.shape[1], src.shape[0])
+        bbox = photomap.utils.scale_extent(geom.bounds, src.shape[1], src.shape[0])
         
         out_meta = {
             "driver": "GTiff",
@@ -122,7 +122,7 @@ def crop_and_resample(src_filepath, dst_filepath, geom, scale_factor=1.0, dst_si
     """Crop and resample input image to GeoTiff output image"""
     
     with rasterio.open(src_filepath, mode='r+') as src:
-        bbox = utils.scale_bounds(geom.bounds, src.shape[1], src.shape[0])
+        bbox = utils.scale_extent(geom.bounds, src.shape[1], src.shape[0])
         src.transform = rio.transform.from_bounds(*bbox, src.width, src.height)
         
         if dst_size is None:

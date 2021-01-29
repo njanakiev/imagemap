@@ -1,6 +1,4 @@
 import numpy as np
-import scipy.linalg
-import scipy.spatial
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 
@@ -59,8 +57,9 @@ def get_lat_lon(gps_info):
     return lat, lon
 
 
-def get_square_bounds(bounds):
-    x0, y0, x1, y1 = bounds
+def square_extent(extent):
+    # TODO: boundary_type inner or outer
+    x0, y0, x1, y1 = extent
     w, h = (x1 - x0), (y1 - y0)
 
     if w > h:
@@ -70,8 +69,9 @@ def get_square_bounds(bounds):
         cx = (x0 + x1) * 0.5
         return [cx - 0.5 * h, y0, cx + 0.5 * h, y1]
 
-def quad_rectangle_bounds(bounds):
-    x0, y0, x1, y1 = bounds
+
+def quad_rectangle_extent(extent):
+    x0, y0, x1, y1 = extent
     cx, cy = (x0 + x1) * 0.5, (y0 + y1) * 0.5
 
     return ([x0, y0, cx, cy],
@@ -80,22 +80,8 @@ def quad_rectangle_bounds(bounds):
             [cx, cy, x1, y1])
 
 
-def scale_bounds(bounds, w, h):
-    x0, y0, x1, y1 = bounds
-    W, H = (x1 - x0), (y1 - y0)
-    
-    if (W / H) > (w / h):
-        cy = (y0 + y1) * 0.5
-        factor = 0.5 * ((W * h) / w)
-        return [x0, cy - factor, x1, cy + factor]
-    else:
-        cx = (x0 + x1) * 0.5
-        factor = 0.5 * ((H * w) / h)
-        return [cx - factor, y0, cx + factor, y1]
-
-
-def get_bounds(bounds, w, h, boundary_type='outer'):
-    x0, y0, x1, y1 = bounds
+def scale_extent(extent, w, h, boundary_type='outer'):
+    x0, y0, x1, y1 = extent
     W, H = (x1 - x0), (y1 - y0)
     
     if ((W / H) < (w / h) and boundary_type == 'inner') or \
@@ -107,6 +93,29 @@ def get_bounds(bounds, w, h, boundary_type='outer'):
         cx = (x0 + x1) * 0.5
         factor = 0.5 * ((H * w) / h)
         return [cx - factor, y0, cx + factor, y1]
+
+
+def relative_extent(src_extent, dst_extent, size, invert_y=False):
+    w, h = size
+    xa0, ya0, xa1, ya1 = src_extent
+    xb0, yb0, xb1, yb1 = dst_extent
+    
+    dpx = (xa1 - xa0) / w
+    dpy = (ya1 - ya0) / h
+    
+    x0 = int((xb0 - xa0) / dpx)
+    x1 = int((xb1 - xa0) / dpx)
+    y0 = int((yb0 - ya0) / dpy)
+    y1 = int((yb1 - ya0) / dpy)
+    
+    if invert_y:
+        y1 = h - y0
+        y0 = h - y1
+        
+    rel_extent = [x0, y0, x1, y1]
+    rel_size = (x1 - x0, y1 - y0)
+    
+    return rel_extent, rel_size
 
 
 def normalize_aspect(X):
@@ -121,41 +130,5 @@ def normalize_aspect(X):
     else:
         X_out[:, 0] = (X_out[:, 0] - min_x) / h + (h - w) / (2 * h)
         X_out[:, 1] = (X_out[:, 1] - min_y) / h
-    
-    return X_out
-
-
-def calc_dispersion(X, min_r, step_size=0.2, noise=None):
-    D = np.zeros(X.shape)
-    kdtree = scipy.spatial.cKDTree(X)
-    num_neighbors = np.zeros((X.shape[0],))
-    
-    for curr_idx in range(X.shape[0]):
-        idx_list = kdtree.query_ball_point(
-            X[curr_idx], min_r)
-        num_neighbors[curr_idx] = len(idx_list)
-        
-        if noise is not None:
-            D[curr_idx] += np.random.normal(0, noise, size=(X.shape[1],))
-        
-        for idx in idx_list:
-            dist = scipy.linalg.norm(X[idx] - X[curr_idx])
-            if dist > 0.0:
-                D[curr_idx] -= step_size * (min_r - dist) * \
-                    ((X[curr_idx] - X[idx]) / dist)
-    
-    return D, num_neighbors
-
-
-def disperse_points(X, min_r, step_size, noise=None, iterations=200, verbose=False):
-    X_out = X.copy()
-    
-    for i in range(iterations):
-        D, num_neighbors = calc_dispersion(X_out, min_r, step_size, noise)
-        if verbose and i % 20 == 0:
-            print(f"Iteration: {i: 5d}, "\
-                  f"Max num neighbors: {num_neighbors.max()}")
-        
-        X_out = X_out - D
     
     return X_out

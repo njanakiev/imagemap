@@ -8,10 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_image(
-    points,
-    filepaths,
-    width,
-    height,
+    df,
+    size,
     extent=None,
     image_size=256,
     gridded=False,
@@ -20,19 +18,29 @@ def create_image(
     background_color=(255, 255, 255, 0),
     verbose=False
 ):
-    if extent is None:
-        extent = np.concatenate(
-            [points.min(axis=0), points.max(axis=0)])
+    width, height = size
     
-    outer_extent = utils.get_bounds(extent, width, height, boundary_type='outer')
+    if extent is None:
+        extent = np.concatenate([
+            df[['x', 'y']].values.min(axis=0),
+            df[['x', 'y']].values.max(axis=0)
+        ])
+
+    outer_extent = utils.scale_extent(
+        extent, width, height, boundary_type='outer')
+
     min_x, min_y, max_x, max_y = outer_extent
-    n, m = width // image_size, height // image_size
+    n = width  // image_size
+    m = height // image_size
 
     full_image = Image.new("RGBA", (width, height), background_color)
 
-    for i, ((x, y), filepath) in enumerate(zip(points, filepaths)):
-        if verbose and i % 500 == 0:
-            logger.info(f"Num images: {i}")
+    for idx, row in df.reset_index().iterrows():
+        x, y = row['x'], row['y']
+        filepath = row['filepath']
+
+        if verbose and idx % 500 == 0:
+            logger.info(f"Num images: {idx}")
         
         # Normalize between 0 and 1
         x = (x - min_x) / (max_x - min_x)
@@ -44,10 +52,10 @@ def create_image(
         else:
             #x = int(x * width - (image_size // 2))
             #y = height - int(y * height + (image_size // 2))
-            
             x = margin + int(x * (width - image_size - 2 * margin))
-            y = height - image_size - margin - int(y * (height - image_size - 2 * margin)) 
-        
+            y = height - image_size - margin \
+                       - int(y * (height - image_size - 2 * margin))
+
         try:
             img = Image.open(filepath)
             if square_images or gridded:
@@ -64,4 +72,4 @@ def create_image(
         except DecompressionBombError:
             logging.warn("DecompressionBombError", filepath)
 
-    return full_image
+    return full_image, outer_extent
