@@ -80,7 +80,7 @@ def merge_images(filepaths, dst_filepath):
 
 def crop(src_filepath, dst_filepath, geom):
     with rasterio.open(src_filepath, mode='r') as src:
-        bbox = photomap.utils.scale_extent(geom.bounds, src.shape[1], src.shape[0])
+        bbox = utils.scale_extent(geom.bounds, src.shape[1], src.shape[0])
         
         out_meta = {
             "driver": "GTiff",

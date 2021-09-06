@@ -70,6 +70,6 @@ def create_image(
             else:
                 full_image.paste(img, (x, y))
         except DecompressionBombError:
-            logging.warn("DecompressionBombError", filepath)
+            logging.warn(f"DecompressionBombError for {filepath}")
 
     return full_image, outer_extent

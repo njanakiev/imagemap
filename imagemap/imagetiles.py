@@ -7,6 +7,7 @@ import logging
 import itertools
 import mercantile
 import numpy as np
+import pandas as pd
 from PIL import Image
 from PIL.Image import DecompressionBombError
 
@@ -96,7 +97,7 @@ def generate_gridded_tiles(
                     img_parent.paste(img, 
                         (x * child_tile_size, y * child_tile_size))
                 except DecompressionBombError:
-                    logger.warn("DecompressionBombError", row['filepath'])
+                    logger.warn(f"DecompressionBombError {row['filepath']}")
         
             yield img_parent, parent_tile.x, parent_tile.y, zoom
 
@@ -109,9 +110,20 @@ def generate_tiles(
     non_geographic=False,
     verbose=True
 ):
-    df_tmp = df[['x', 'y', 'filepath']].copy()
-    
-    # TODO: convert non_geographic data to FULL_EXTENT_XY
+    df_tmp = df[['x', 'y', 'filepath']].copy().dropna()
+
+    if non_geographic:
+        # Transform from (0, 1) to full extent
+        df_tmp['x'] = FULL_EXTENT_XY[0] + \
+            (df_tmp['x'] * (FULL_EXTENT_XY[2] - FULL_EXTENT_XY[0]))
+        df_tmp['y'] = FULL_EXTENT_XY[1] + \
+            (df_tmp['y'] * (FULL_EXTENT_XY[3] - FULL_EXTENT_XY[1]))
+    else: 
+        df_tmp[['x', 'y']] = df_tmp.apply(
+            lambda row: pd.Series(
+                mercantile.xy(row['x'], row['y'], truncate=True),
+                index=['x', 'y']),
+            axis=1)
 
     extent_xy = np.concatenate([
         df_tmp[['x', 'y']].values.min(axis=0),
@@ -149,7 +161,6 @@ def generate_tiles(
                 full_image.size, 
                 invert_y=True
             )
-
             img = full_image.crop(crop)
 
             yield img, tile.x, tile.y, zoom

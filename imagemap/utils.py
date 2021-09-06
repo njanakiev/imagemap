@@ -118,17 +118,22 @@ def relative_extent(src_extent, dst_extent, size, invert_y=False):
     return rel_extent, rel_size
 
 
-def normalize_aspect(X):
-    X_out = X.copy()
-    min_x, min_y = X.min(axis=0) 
-    max_x, max_y = X.max(axis=0)
-    w, h = max_x - min_x, max_y - min_y
+def normalize_aspect(coords):
+    coords_out = coords.copy()
+    min_x, min_y = coords_out.min(axis=0) 
+    max_x, max_y = coords_out.max(axis=0)
+    w = max_x - min_x
+    h = max_y - min_y
     
     if w > h:
-        X_out[:, 0] = (X_out[:, 0] - min_x) / w
-        X_out[:, 1] = (X_out[:, 1] - min_y) / w + (w - h) / (2 * w)
+        coords_out[:, 0] = (coords_out[:, 0] \
+                         - min_x) / w
+        coords_out[:, 1] = (coords_out[:, 1] \
+                         - min_y) / w + (w - h) / (2 * w)
     else:
-        X_out[:, 0] = (X_out[:, 0] - min_x) / h + (h - w) / (2 * h)
-        X_out[:, 1] = (X_out[:, 1] - min_y) / h
+        coords_out[:, 0] = (coords_out[:, 0] \
+                         - min_x) / h + (h - w) / (2 * h)
+        coords_out[:, 1] = (coords_out[:, 1] \
+                         - min_y) / h
     
-    return X_out
+    return coords_out
