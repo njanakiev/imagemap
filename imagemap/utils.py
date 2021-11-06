@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 from PIL.ExifTags import TAGS, GPSTAGS
 
 
@@ -137,3 +137,33 @@ def normalize_aspect(coords):
                          - min_y) / h
     
     return coords_out
+
+
+def image_grid(
+    images, 
+    nrow, ncol,
+    tile_size=129,
+    padding=0,
+    image_paths=False
+):
+    w = ncol * (tile_size + padding) + padding
+    h = nrow * (tile_size + padding) + padding
+    grid_image = Image.new(
+        'RGB', (w, h), (255, 255, 255))
+
+    for idx in range(nrow*ncol):
+        if idx < len(images):
+            img = Image.open(images[idx]) if image_paths else images[idx]
+            img_square = ImageOps.fit(img, (tile_size, tile_size))
+            img_square = img_square.resize(
+                (tile_size, tile_size))
+            
+            i = idx % ncol
+            j = (idx - i) // ncol
+            offset = (
+                (tile_size + padding) * i + padding,
+                (tile_size + padding) * j + padding
+            )
+            grid_image.paste(img_square, offset)
+
+    return grid_image
