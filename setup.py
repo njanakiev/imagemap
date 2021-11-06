@@ -16,7 +16,11 @@ setup(
     description='imagemap',
     platforms='any',
     packages=['imagemap'],
-    install_requires=[],
+    install_requires=[
+        'mercantile',
+        'numpy',
+        'pandas'
+    ],
     entry_points={
         "console_scripts": [
             "imagemap = imagemap.__main__:main"
