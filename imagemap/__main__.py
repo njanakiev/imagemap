@@ -36,6 +36,9 @@ def main():
     parser.add_argument('--gridded', action='store_true',
         dest='gridded_tiles', default=False,
         help='Create gridded tiles output')
+    parser.add_argument('--non-geographic', action='store_true',
+        dest='non_geographic', default=False,
+        help='Non-geographic coordinates between 0 and 1.')
     parser.add_argument('-v', '--verbose', action='store_true',
         dest='verbose', default=False,
         help='Verbose console output')
@@ -58,6 +61,7 @@ def main():
         max_zoom=args.max_zoom, 
         steps=args.steps,
         gridded_tiles=args.gridded_tiles,
+        non_geographic=args.non_geographic,
         overwrite=args.overwrite,
         verbose=args.verbose
     )

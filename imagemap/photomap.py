@@ -1,9 +1,4 @@
 import os
-import shutil
-import pyproj
-import numpy as np
-import pandas as pd
-import geopandas as gpd
 import shapely.geometry
 import shapely.ops
 

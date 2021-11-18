@@ -19,7 +19,8 @@ setup(
     install_requires=[
         'mercantile',
         'numpy',
-        'pandas'
+        'pandas',
+        'Pillow'
     ],
     entry_points={
         "console_scripts": [

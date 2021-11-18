@@ -25,7 +25,7 @@ def _calc_dispersion(X, min_r, step_size=0.2, noise=None):
     return D, num_neighbors
 
 
-def disperse_points(X, min_r, step_size, noise=None, iterations=200, verbose=False):
+def disperse_points(X, min_r, step_size=0.2, noise=None, iterations=200, verbose=False):
     X_out = X.copy()
     
     for i in range(iterations):
