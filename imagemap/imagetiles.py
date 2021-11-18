@@ -8,7 +8,7 @@ import itertools
 import mercantile
 import numpy as np
 import pandas as pd
-from PIL import Image
+from PIL import Image, ImageOps
 from PIL.Image import DecompressionBombError
 
 from . import imagemap
@@ -91,7 +91,7 @@ def generate_gridded_tiles(
             for _, row in group.iterrows():
                 try:
                     img = Image.open(row['filepath'])
-                    img = img.resize((child_tile_size, child_tile_size))
+                    img = ImageOps.fit(img, (child_tile_size, child_tile_size))
                     x = row['tile'].x - min_x
                     y = row['tile'].y - min_y
                     img_parent.paste(img, 
@@ -183,6 +183,9 @@ def create_grid_tiles(
     name='Generated Tiles',
     description=''
 ):
+    if len(df) == 0:
+        raise ValueError("Dataframe df has no columns!")
+    
     if gridded_tiles:
         tiles_generator = generate_gridded_tiles(
             df,
