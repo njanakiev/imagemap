@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 with open("imagemap/__init__.py") as f:
@@ -10,12 +10,12 @@ with open("imagemap/__init__.py") as f:
 setup(
     name='imagemap',
     version=version,
-    url='https://gitlab.com/njanakiev/imagemap.git',
+    url="git@gitlab.com/njanakiev/imagemap.git",
     author='Nikolai Janakiev',
     author_email='nikolai.janakiev@gmail.com',
     description='imagemap',
     platforms='any',
-    packages=['imagemap'],
+    packages=find_packages(),
     install_requires=[
         'mercantile',
         'numpy',
@@ -26,5 +26,8 @@ setup(
         "console_scripts": [
             "imagemap = imagemap.__main__:main"
         ]
-    }
+    },
+    classifiers=[
+        "Programming Language :: Python :: 3"
+    ]
 )

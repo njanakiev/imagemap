@@ -7,7 +7,6 @@ import rasterio.merge
 import rasterio.mask
 import rasterio.plot
 from rasterio.enums import Resampling
-from rasterio import Affine, MemoryFile
 
 from . import utils
 
@@ -87,7 +86,7 @@ def crop(src_filepath, dst_filepath, geom):
             "dtype": "uint8",
             "crs": rio.crs.CRS.from_epsg(3857)
         }
-        with MemoryFile() as memfile:
+        with rio.MemoryFile() as memfile:
             with memfile.open(**out_meta) as dst:  # Open as DatasetWriter
                 for i in range(1, 4):
                     band = src.read(i)
@@ -153,7 +152,7 @@ def crop_and_resample(src_filepath, dst_filepath, geom, scale_factor=1.0, dst_si
             "crs": rio.crs.CRS.from_epsg(epsg)
         }
         
-        with MemoryFile() as memfile:
+        with rio.MemoryFile() as memfile:
             with memfile.open(**out_meta) as dst:  # Open as DatasetWriter
                 dst.write(out_image)
 

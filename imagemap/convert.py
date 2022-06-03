@@ -1,9 +1,6 @@
 import os
 import pandas as pd
-import geopandas as gpd
-import shapely.geometry
-import rasterio
-from PIL import Image, ImageOps, ImageFile, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from . import utils
 

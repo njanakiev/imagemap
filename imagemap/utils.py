@@ -126,15 +126,11 @@ def normalize_aspect(coords):
     h = max_y - min_y
     
     if w > h:
-        coords_out[:, 0] = (coords_out[:, 0] \
-                         - min_x) / w
-        coords_out[:, 1] = (coords_out[:, 1] \
-                         - min_y) / w + (w - h) / (2 * w)
+        coords_out[:, 0] = (coords_out[:, 0] - min_x) / w
+        coords_out[:, 1] = (coords_out[:, 1] - min_y) / w + (w - h) / (2 * w)
     else:
-        coords_out[:, 0] = (coords_out[:, 0] \
-                         - min_x) / h + (h - w) / (2 * h)
-        coords_out[:, 1] = (coords_out[:, 1] \
-                         - min_y) / h
+        coords_out[:, 0] = (coords_out[:, 0] - min_x) / h + (h - w) / (2 * h)
+        coords_out[:, 1] = (coords_out[:, 1] - min_y) / h
     
     return coords_out
 
