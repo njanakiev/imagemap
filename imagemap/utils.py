@@ -1,4 +1,4 @@
-import numpy as np
+import requests
 from PIL import Image, ImageOps
 from PIL.ExifTags import TAGS, GPSTAGS
 
@@ -137,25 +137,36 @@ def normalize_aspect(coords):
 
 def image_grid(
     images, 
-    nrow, ncol,
-    tile_size=129,
+    nrows, ncols,
+    tile_size=128,
     padding=0,
-    image_paths=False
+    image_type='filepath'
 ):
-    w = ncol * (tile_size + padding) + padding
-    h = nrow * (tile_size + padding) + padding
+    w = ncols * (tile_size + padding) + padding
+    h = nrows * (tile_size + padding) + padding
     grid_image = Image.new(
         'RGB', (w, h), (255, 255, 255))
 
-    for idx in range(nrow*ncol):
+    if image_type == 'url':
+        loader = lambda url: Image.open(requests.get(url, stream=True).raw)
+    elif image_type == 'filepath':
+        loader = lambda filepath: Image.open(filepath)
+    elif image_type == 'pil':
+        loader = lambda im: im
+    else:
+        raise ValueError(f"Image type not available: {image_type}")
+
+    for idx in range(nrows*ncols):
         if idx < len(images):
-            img = Image.open(images[idx]) if image_paths else images[idx]
+            #img = Image.open(images[idx]) if image_paths else images[idx]
+            img = loader(images[idx])
+            img = img.convert('RGB')
             img_square = ImageOps.fit(img, (tile_size, tile_size))
             img_square = img_square.resize(
                 (tile_size, tile_size))
             
-            i = idx % ncol
-            j = (idx - i) // ncol
+            i = idx % ncols
+            j = (idx - i) // ncols
             offset = (
                 (tile_size + padding) * i + padding,
                 (tile_size + padding) * j + padding
