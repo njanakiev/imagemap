@@ -1,14 +1,71 @@
 import logging
+import requests
 import numpy as np
 from PIL import Image, ImageOps
-from PIL.Image import DecompressionBombError
+from PIL.Image import DecompressionBombError, UnidentifiedImageError
 from . import utils
 
 logger = logging.getLogger(__name__)
 
 
-def create_image(
-    df,
+def _download_image(url):
+    r = requests.get(url, stream=True)
+    r.raise_for_status()
+
+    return Image.open(r.raw)
+
+
+def _get_loader(image_type):
+    if image_type == 'url':
+        loader = _download_image
+    elif image_type == 'filepath':
+        loader = Image.open
+    elif image_type == 'pil':
+        loader = lambda im: im
+    else:
+        raise ValueError(
+            f"Image type not available: {image_type}")
+
+    return loader
+
+
+def image_grid(
+    images,
+    nrows, ncols,
+    tile_size=128,
+    padding=0,
+    image_type='filepath'
+):
+    loader = _get_loader(image_type)
+    w = ncols * (tile_size + padding) + padding
+    h = nrows * (tile_size + padding) + padding
+    grid_image = Image.new(
+        'RGB', (w, h), (255, 255, 255))
+
+    for idx in range(nrows*ncols):
+        if idx < len(images):
+            #img = Image.open(images[idx]) if image_paths else images[idx]
+            img = loader(images[idx])
+            img = img.convert('RGB')
+            img_square = ImageOps.fit(img, (tile_size, tile_size))
+            img_square = img_square.resize(
+                (tile_size, tile_size))
+
+            i = idx % ncols
+            j = (idx - i) // ncols
+            offset = (
+                (tile_size + padding) * i + padding,
+                (tile_size + padding) * j + padding
+            )
+            grid_image.paste(img_square, offset)
+
+    return grid_image
+
+
+
+def image_map(
+    images,
+    X,
     size,
     extent=None,
     image_size=256,
@@ -16,15 +73,14 @@ def create_image(
     square_images=False,
     margin=0,
     background_color=(255, 255, 255, 0),
-    verbose=False
+    verbose=False,
+    image_type='filepath'
 ):
+    loader = _get_loader(image_type)
     width, height = size
-    
+
     if extent is None:
-        extent = np.concatenate([
-            df[['x', 'y']].values.min(axis=0),
-            df[['x', 'y']].values.max(axis=0)
-        ])
+        extent = np.concatenate([X.min(axis=0), X.max(axis=0)])
 
     outer_extent = utils.scale_extent(
         extent, width, height, boundary_type='outer')
@@ -35,10 +91,8 @@ def create_image(
 
     full_image = Image.new("RGBA", (width, height), background_color)
 
-    for idx, row in df.reset_index().iterrows():
-        x, y = row['x'], row['y']
-        filepath = row['filepath']
-
+    #for idx, row in df.reset_index().iterrows():
+    for idx, ((x, y), image) in enumerate(zip(X, images)):
         if verbose and idx % 500 == 0:
             logger.info(f"Num images: {idx}")
         
@@ -57,7 +111,7 @@ def create_image(
                        - int(y * (height - image_size - 2 * margin))
 
         try:
-            img = Image.open(filepath)
+            img = loader(image)
             if square_images or gridded:
                 img = ImageOps.fit(
                     img, (image_size, image_size), Image.ANTIALIAS)
@@ -70,6 +124,12 @@ def create_image(
             else:
                 full_image.paste(img, (x, y))
         except DecompressionBombError:
-            logging.warn(f"DecompressionBombError for {filepath}")
+            path = image if image_type != "pil" else "IMAGE"
+            logging.warn(f"[DecompressionBombError] for {path}")
+        except UnidentifiedImageError:
+            path = image if image_type != "pil" else "IMAGE"
+            logging.warn(f"[UnidentifiedImageError] for {path}")
+        except requests.exceptions.HTTPError as e:
+            logging.warn(f"[HTTPError] {e} for {image}")
 
     return full_image, outer_extent
