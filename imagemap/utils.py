@@ -1,26 +1,25 @@
-from PIL import Image, ImageOps
+from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 
 
 def get_exif_metadata(filepath):
-    im = Image.open(filepath)
-
-    exif = im._getexif()
     item = {}
-    if exif is None:
-        return item
-    
-    for (tag, value) in exif.items():
-        decoded = TAGS.get(tag, tag)
-        if decoded == "GPSInfo":
-            gps_data = {}
-            for t in value:
-                sub_decoded = GPSTAGS.get(t, t)
-                gps_data[sub_decoded] = value[t]
+    with Image.open(filepath) as img:
+        exif = img._getexif()
+        if exif is None:
+            return item
+        
+        for (tag, value) in exif.items():
+            decoded = TAGS.get(tag, tag)
+            if decoded == "GPSInfo":
+                gps_data = {}
+                for t in value:
+                    sub_decoded = GPSTAGS.get(t, t)
+                    gps_data[sub_decoded] = value[t]
 
-            item[decoded] = gps_data
-        else:
-            item[decoded] = value
+                item[decoded] = gps_data
+            else:
+                item[decoded] = value
 
     return item
 
@@ -34,26 +33,35 @@ def _convert_to_degress(value):
     return d + (m / 60.0) + (s / 3600.0)
 
 
-def get_lat_lon(gps_info):
+def get_image_coordinates(gps_info):
     """Returns the latitude and longitude, from the provided exif_data"""
-    lat, lon = None, None
+    lat, lon, altitude = None, None, None
 
     if isinstance(gps_info, dict):
         gps_latitude = gps_info.get("GPSLatitude")
         gps_latitude_ref = gps_info.get('GPSLatitudeRef')
         gps_longitude = gps_info.get('GPSLongitude')
         gps_longitude_ref = gps_info.get('GPSLongitudeRef')
+        gps_altitude = gps_info.get('GPSAltitude')
+        gps_altitude_ref = gps_info.get('GPSAltitudeRef')
         
-        if gps_latitude and gps_latitude_ref and gps_longitude and gps_longitude_ref:
+        if gps_latitude and gps_latitude_ref:
             lat = _convert_to_degress(gps_latitude)
             if gps_latitude_ref != "N":
                 lat = 0 - lat
 
+        if gps_longitude and gps_longitude_ref:
             lon = _convert_to_degress(gps_longitude)
             if gps_longitude_ref != "E":
                 lon = 0 - lon
+                
+        if gps_altitude and gps_altitude_ref:
+            altitude = float(gps_altitude)
+            # Bellow sealevel
+            if int.from_bytes(gps_altitude_ref, "big") == 1:
+                altitude = 0 - altitude
 
-    return lat, lon
+    return lat, lon, altitude
 
 
 def square_extent(extent):
