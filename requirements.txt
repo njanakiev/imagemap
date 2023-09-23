@@ -1,0 +1,8 @@
+s3fs
+fsspec
+universal_pathlib
+mercantile
+numpy
+pandas
+Pillow
+datashader

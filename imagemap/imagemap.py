@@ -2,20 +2,24 @@ import logging
 import requests
 import numpy as np
 from PIL import Image, ImageOps
-from PIL.Image import DecompressionBombError, UnidentifiedImageError
+from PIL.Image import DecompressionBombError, UnidentifiedImageError # type: ignore
 from . import utils
+from typing import List, Any, Tuple, Optional, Sequence, Callable, Union
+from . import ExtentType
 
 logger = logging.getLogger(__name__)
 
 
-def _download_image(url):
+def _download_image(url: str) -> Image.Image:
     r = requests.get(url, stream=True)
     r.raise_for_status()
 
     return Image.open(r.raw)
 
 
-def _get_loader(image_type):
+def _get_loader(
+    image_type: str
+) -> Callable[[Any], Image.Image]:
     if image_type == 'url':
         loader = _download_image
     elif image_type == 'filepath':
@@ -30,12 +34,13 @@ def _get_loader(image_type):
 
 
 def image_grid(
-    images,
-    nrows, ncols,
-    tile_size=128,
-    padding=0,
-    image_type='filepath'
-):
+    images: List[Any],
+    nrows: int,
+    ncols: int,
+    tile_size: int=128,
+    padding: int=0,
+    image_type: str='filepath'
+) -> Image.Image:
     loader = _get_loader(image_type)
     w = ncols * (tile_size + padding) + padding
     h = nrows * (tile_size + padding) + padding
@@ -64,26 +69,26 @@ def image_grid(
 
 
 def image_map(
-    images,
-    X,
-    size,
-    extent=None,
-    image_size=256,
-    gridded=False,
-    square_images=False,
-    margin=0,
+    images: List[Any],
+    X: np.ndarray,
+    size: Tuple[int, int],
+    extent=Optional[ExtentType],
+    image_size: int=256,
+    gridded: bool=False,
+    square_images: bool=False,
+    margin: int=0,
     background_color=(255, 255, 255, 0),
-    verbose=False,
-    image_type='filepath'
-):
+    verbose: bool=False,
+    image_type: str='filepath'
+) -> Tuple[Image.Image, Sequence[Union[int, float]]]:
     loader = _get_loader(image_type)
     width, height = size
 
     if extent is None:
-        extent = np.concatenate([X.min(axis=0), X.max(axis=0)])
+        extent = tuple(np.concatenate([X.min(axis=0), X.max(axis=0)]))
 
     outer_extent = utils.scale_extent(
-        extent, width, height, boundary_type='outer')
+        extent, width, height, boundary_type='outer') # type: ignore
 
     min_x, min_y, max_x, max_y = outer_extent
     n = width  // image_size

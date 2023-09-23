@@ -1,11 +1,15 @@
+import os
+import numpy as np
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
+from typing import Tuple, Sequence, Union
+from . import ExtentType
 
 
-def get_exif_metadata(filepath):
-    item = {}
+def get_exif_metadata(filepath: str) -> dict:
+    item: dict = {}
     with Image.open(filepath) as img:
-        exif = img._getexif()
+        exif = img._getexif() # type: ignore
         if exif is None:
             return item
         
@@ -87,7 +91,12 @@ def quad_rectangle_extent(extent):
             [cx, cy, x1, y1])
 
 
-def scale_extent(extent, w, h, boundary_type='outer'):
+def scale_extent(
+    extent: Sequence[Union[int, float]],
+    w: Union[int, float],
+    h: Union[int, float],
+    boundary_type: str='outer'
+) -> ExtentType:
     x0, y0, x1, y1 = extent
     W, H = (x1 - x0), (y1 - y0)
     
@@ -95,14 +104,19 @@ def scale_extent(extent, w, h, boundary_type='outer'):
        ((W / H) > (w / h) and boundary_type == 'outer'):
         cy = (y0 + y1) * 0.5
         factor = 0.5 * ((W * h) / w)
-        return [x0, cy - factor, x1, cy + factor]
+        return (x0, cy - factor, x1, cy + factor)
     else:
         cx = (x0 + x1) * 0.5
         factor = 0.5 * ((H * w) / h)
-        return [cx - factor, y0, cx + factor, y1]
+        return (cx - factor, y0, cx + factor, y1)
 
 
-def relative_extent(src_extent, dst_extent, size, invert_y=False):
+def relative_extent(
+    src_extent: Sequence[Union[int, float]],
+    dst_extent: Sequence[Union[int, float]],
+    size: Tuple[int, int],
+    invert_y: bool=False
+) -> Tuple[Tuple[int, int, int, int], Tuple[int, int]]:
     w, h = size
     xa0, ya0, xa1, ya1 = src_extent
     xb0, yb0, xb1, yb1 = dst_extent
@@ -119,13 +133,13 @@ def relative_extent(src_extent, dst_extent, size, invert_y=False):
         y1 = h - y0
         y0 = h - y1
         
-    rel_extent = [x0, y0, x1, y1]
+    rel_extent = (x0, y0, x1, y1)
     rel_size = (x1 - x0, y1 - y0)
     
     return rel_extent, rel_size
 
 
-def normalize_aspect(coords):
+def normalize_aspect(coords: np.ndarray) -> np.ndarray:
     coords_out = coords.copy()
     min_x, min_y = coords_out.min(axis=0) 
     max_x, max_y = coords_out.max(axis=0)
